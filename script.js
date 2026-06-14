@@ -22,7 +22,9 @@ const cartItemsContainer = document.getElementById("cart-items-container");
 const cartTotalPrice = document.getElementById("cart-total-price");
 const cartCount = document.getElementById("cart-count");
 const orderForm = document.getElementById("order-form");
+const modeToggleBtn = document.getElementById("mode-toggle-btn");
 
+const currentMode = localStorage.getItem("theme-mode");
 // 2. Render Products into HTML Catalog
 function displayProducts() {
     productGrid.innerHTML = products.map(product => `
@@ -102,6 +104,29 @@ function closeCart() {
 cartToggleBtn.addEventListener("click", openCart);
 closeCartBtn.addEventListener("click", closeCart);
 cartOverlay.addEventListener("click", closeCart);
+
+
+if (currentMode === "dark") {
+    document.body.classList.add("dark-mode");
+    modeToggleBtn.textContent = "☀️ Light Mode";
+} else {
+    modeToggleBtn.textContent = "🌙 Dark Mode";
+}
+
+// 2. Add event listener to handle the click switch
+modeToggleBtn.addEventListener("click", () => {
+    // Toggle the .dark-mode class on the body
+    document.body.classList.toggle("dark-mode");
+    
+    // Check if dark mode is active after the toggle
+    if (document.body.classList.contains("dark-mode")) {
+        localStorage.setItem("theme-mode", "dark");
+        modeToggleBtn.textContent = "☀️ Light Mode";
+    } else {
+        localStorage.setItem("theme-mode", "light");
+        modeToggleBtn.textContent = "🌙 Dark Mode";
+    }
+});
 
 // 4. Form Submission (Formats Cart Data for WhatsApp)
 orderForm.addEventListener("submit", function(e) {
