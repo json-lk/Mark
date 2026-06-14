@@ -1,8 +1,8 @@
-// 1. Initialize Supabase Client
+// 1. Initialize Supabase Client securely
 const SUPABASE_URL = "https://lufzfqewignnlseijtji.supabase.co";
-// ⚠️ MAKE SURE TO PASTE YOUR TRUE SUPABASE 'anon public' KEY HERE (starts with eyJ...)
+// Paste your true long 'anon public' key here (starts with eyJ...)
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1ZnpmcWV3aWdubmxzZWlqdGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDc2NTgsImV4cCI6MjA5NzAyMzY1OH0.hViakWLlUMk9mzcQPtaIlPTygF2zPEfcwIdU8upwPL8";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Products will now load from the database dynamically
 let products = [];
@@ -30,7 +30,7 @@ const currentMode = localStorage.getItem("theme-mode");
 // 2. Fetch Products From Supabase on Page Load
 async function fetchProducts() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('products')
             .select('*');
 
@@ -68,6 +68,8 @@ function displayProducts() {
 // 3. Shopping Cart Interactions
 function addToCart(productId) {
     const product = products.find(p => p.id === productId);
+    if (!product) return;
+
     const existingItem = cart.find(item => item.id === productId);
 
     if (existingItem) {
@@ -127,114 +129,123 @@ function closeCart() {
     cartOverlay.classList.remove("show");
 }
 
-cartToggleBtn.addEventListener("click", openCart);
-closeCartBtn.addEventListener("click", closeCart);
-cartOverlay.addEventListener("click", closeCart);
+// Attach Drawer Events Safely
+if (cartToggleBtn) cartToggleBtn.addEventListener("click", openCart);
+if (closeCartBtn) closeCartBtn.addEventListener("click", closeCart);
+if (cartOverlay) cartOverlay.addEventListener("click", closeCart);
 
 // Dark/Light Mode Switch Logic
 if (currentMode === "dark") {
     document.body.classList.add("dark-mode");
-    modeToggleBtn.textContent = "☀️ Light Mode";
+    if (modeToggleBtn) modeToggleBtn.textContent = "☀️";
 } else {
-    modeToggleBtn.textContent = "🌙 Dark Mode";
+    if (modeToggleBtn) modeToggleBtn.textContent = "🌙";
 }
 
-modeToggleBtn.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-    
-    if (document.body.classList.contains("dark-mode")) {
-        localStorage.setItem("theme-mode", "dark");
-        modeToggleBtn.textContent = "☀️ Light Mode";
-    } else {
-        localStorage.setItem("theme-mode", "light");
-        modeToggleBtn.textContent = "🌙 Dark Mode";
-    }
-});
+if (modeToggleBtn) {
+    modeToggleBtn.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        
+        if (document.body.classList.contains("dark-mode")) {
+            localStorage.setItem("theme-mode", "dark");
+            modeToggleBtn.textContent = "☀️";
+        } else {
+            localStorage.setItem("theme-mode", "light");
+            modeToggleBtn.textContent = "🌙";
+        }
+    });
+}
 
 // 4. Form Submission (Saves to Supabase, then triggers WhatsApp)
-orderForm.addEventListener("submit", async function(e) {
-    e.preventDefault();
+if (orderForm) {
+    orderForm.addEventListener("submit", async function(e) {
+        e.preventDefault();
 
-    if (cart.length === 0) {
-        alert("Your cart is empty! Choose something beautiful first.");
-        return;
-    }
+        if (cart.length === 0) {
+            alert("Your cart is empty! Choose something beautiful first.");
+            return;
+        }
 
-    const name = document.getElementById("customer-name").value;
-    const phone = document.getElementById("customer-phone").value;
-    const address = document.getElementById("customer-address").value;
+        const name = document.getElementById("customer-name").value;
+        const phone = document.getElementById("customer-phone").value;
+        const address = document.getElementById("customer-address").value;
 
-    // Calculate grand total and structure database item data
-    let grandTotal = 0;
-    const orderItemsForDb = cart.map(item => {
-        const itemTotal = item.price * item.quantity;
-        grandTotal += itemTotal;
-        return {
-            product_id: item.id,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            total: itemTotal
-        };
-    });
-
-    // Disable button during submission to avoid duplicate database clicks
-    const submitBtn = orderForm.querySelector(".submit-order-btn");
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Saving Order...";
-
-    try {
-        // A. Insert Order Data into Supabase (Including the Shop WhatsApp Number)
-        const { data, error } = await supabase
-            .from('orders')
-            .insert([
-                {
-                    customer_name: name,
-                    customer_phone: phone,
-                    delivery_address: address,
-                    items: orderItemsForDb,
-                    total_price: grandTotal,
-                    shop_whatsapp: WHATSAPP_NUMBER
-                }
-            ]);
-
-        if (error) throw error;
-
-        // B. Formulate WhatsApp Message String 
-        let message = `*NEW ORDER REQUEST*\n\n`;
-        message += `*Customer Details:*\n`;
-        message += `• Name: ${name}\n`;
-        message += `• Phone: ${phone}\n`;
-        message += `• Delivery Info: ${address}\n\n`;
-        message += `*Items Requested:*\n`;
-
-        cart.forEach(item => {
+        // Calculate grand total and structure database item data
+        let grandTotal = 0;
+        const orderItemsForDb = cart.map(item => {
             const itemTotal = item.price * item.quantity;
-            message += `• ${item.name} (x${item.quantity}) - ₵${itemTotal.toFixed(2)}\n`;
+            grandTotal += itemTotal;
+            return {
+                product_id: item.id,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                total: itemTotal
+            };
         });
 
-        message += `\n*Total Estimated:* ₵${grandTotal.toFixed(2)}`;
+        // Disable button during submission to avoid duplicate database clicks
+        const submitBtn = orderForm.querySelector(".submit-order-btn");
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Saving Order...";
+        }
 
-        // Convert string to URL-safe formatting
-        const encodedMessage = encodeURIComponent(message);
-        const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+        try {
+            // A. Insert Order Data into Supabase
+            const { error } = await supabaseClient
+                .from('orders')
+                .insert([
+                    {
+                        customer_name: name,
+                        customer_phone: phone,
+                        delivery_address: address,
+                        items: orderItemsForDb,
+                        total_price: grandTotal,
+                        shop_whatsapp: WHATSAPP_NUMBER
+                    }
+                ]);
 
-        // C. Clear State and Open WhatsApp Window
-        cart = [];
-        updateCart();
-        closeCart();
-        orderForm.reset();
+            if (error) throw error;
 
-        window.open(whatsappUrl, '_blank');
+            // B. Formulate WhatsApp Message String 
+            let message = `*NEW ORDER REQUEST*\n\n`;
+            message += `*Customer Details:*\n`;
+            message += `• Name: ${name}\n`;
+            message += `• Phone: ${phone}\n`;
+            message += `• Delivery Info: ${address}\n\n`;
+            message += `*Items Requested:*\n`;
 
-    } catch (error) {
-        console.error("Order insertion failed:", error.message);
-        alert("Something went wrong saving your order. Please try again.");
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit Order via WhatsApp";
-    }
-});
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                message += `• ${item.name} (x${item.quantity}) - ₵${itemTotal.toFixed(2)}\n`;
+            });
+
+            message += `\n*Total Estimated:* ₵${grandTotal.toFixed(2)}`;
+
+            // Convert string to URL-safe formatting
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+
+            // C. Clear State and Open WhatsApp Window
+            cart = [];
+            updateCart();
+            closeCart();
+            orderForm.reset();
+
+            window.open(whatsappUrl, '_blank');
+
+        } catch (error) {
+            console.error("Order insertion failed:", error.message);
+            alert("Something went wrong saving your order. Please try again.");
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Submit Order via WhatsApp";
+            }
+        }
+    });
+}
 
 // Run everything on startup
 fetchProducts();
