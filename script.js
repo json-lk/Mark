@@ -7,7 +7,7 @@ const products = [
 ];
 
 // Put your shop's WhatsApp number here (e.g., 233500000000 for Ghana, 15550000000 for US, etc.)
-const WHATSAPP_NUMBER = "233500000000"; 
+const WHATSAPP_NUMBER = "233538655315"; 
 
 // Grab old cart from user's storage if they refresh, otherwise start empty
 let cart = JSON.parse(localStorage.getItem("showroom_cart")) || [];
