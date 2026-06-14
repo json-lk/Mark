@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threads - Clothing Showroom</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">THREADS</div>
+        <button id="cart-toggle-btn" class="cart-btn">
+            Cart (<span id="cart-count">0</span>)
+        </button>
+    </header>
+
+    <section class="hero">
+        <h1>Explore Our Collection</h1>
+        <p>Browse, select your items, and place an order request. No online payment required.</p>
+    </section>
+
+    <main class="catalog">
+        <div class="product-grid" id="product-grid">
+            </div>
+    </main>
+
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h2>Your Order Request</h2>
+            <button id="close-cart-btn" class="close-btn">&times;</button>
+        </div>
+        
+        <div class="cart-items" id="cart-items-container">
+            </div>
+
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total Estimated:</span>
+                <span id="cart-total-price">₵0.00</span>
+            </div>
+            
+            <form id="order-form">
+                <h3>Delivery & Contact Details</h3>
+                <input type="text" id="customer-name" placeholder="Full Name" required>
+                <input type="tel" id="customer-phone" placeholder="WhatsApp / Phone Number" required>
+                <textarea id="customer-address" placeholder="Delivery Address & Size Notes (e.g., Medium)" rows="3" required></textarea>
+                <button type="submit" class="submit-order-btn">Submit Order via WhatsApp</button>
+            </form>
+        </div>
+    </div>
+    <div class="cart-overlay" id="cart-overlay"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
