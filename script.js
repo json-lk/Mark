@@ -36,6 +36,8 @@ async function fetchProducts() {
 
         if (error) throw error;
 
+        console.log("Supabase Data Received:", data);
+        
         products = data;
         displayProducts();
     } catch (error) {
