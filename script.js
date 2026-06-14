@@ -1,7 +1,7 @@
 // 1. Initialize Supabase Client
 // Replace these strings with your actual project credentials from your Supabase Dashboard Settings -> API
-const SUPABASE_URL = "https://your-project-id.supabase.co";
-const SUPABASE_ANON_KEY = "your-anon-public-key";
+const SUPABASE_URL = "https://lufzfqewignnlseijtji.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_V82QluVqm7Ai5ISMg9hb5A_V_WmXkx6";
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Products will now load from the database dynamically
