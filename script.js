@@ -1,8 +1,8 @@
 // 1. Initialize Supabase Client
-// Replace these strings with your actual project credentials from your Supabase Dashboard Settings -> API
 const SUPABASE_URL = "https://lufzfqewignnlseijtji.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_V82QluVqm7Ai5ISMg9hb5A_V_WmXkx6";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ⚠️ MAKE SURE TO PASTE YOUR TRUE SUPABASE 'anon public' KEY HERE (starts with eyJ...)
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1ZnpmcWV3aWdubmxzZWlqdGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDc2NTgsImV4cCI6MjA5NzAyMzY1OH0.hViakWLlUMk9mzcQPtaIlPTygF2zPEfcwIdU8upwPL8";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Products will now load from the database dynamically
 let products = [];
@@ -48,7 +48,7 @@ async function fetchProducts() {
 
 // Render Products into HTML Catalog
 function displayProducts() {
-    if (products.length === 0) {
+    if (!products || products.length === 0) {
         productGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center;">No items found in stock.</p>`;
         return;
     }
@@ -194,7 +194,7 @@ orderForm.addEventListener("submit", async function(e) {
                     delivery_address: address,
                     items: orderItemsForDb,
                     total_price: grandTotal,
-                    shop_whatsapp: WHATSAPP_NUMBER // Added field to store shop number
+                    shop_whatsapp: WHATSAPP_NUMBER
                 }
             ]);
 
