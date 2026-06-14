@@ -1,12 +1,13 @@
-// 1. Mock Data for Clothes (Change names, prices, and swap image URLs with your inventory photos)
-const products = [
-    { id: 1, name: "Minimalist Black Hoodie", price: 250, image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500" },
-    { id: 2, name: "Vintage Oversized Denim Jacket", price: 380, image: "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=500" },
-    { id: 3, name: "Classic White Linen T-Shirt", price: 120, image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500" },
-    { id: 4, name: "Cargo Utility Pants", price: 290, image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=500" }
-];
+// 1. Initialize Supabase Client
+// Replace these strings with your actual project credentials from your Supabase Dashboard Settings -> API
+const SUPABASE_URL = "https://your-project-id.supabase.co";
+const SUPABASE_ANON_KEY = "your-anon-public-key";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Put your shop's WhatsApp number here (e.g., 233500000000 for Ghana, 15550000000 for US, etc.)
+// Products will now load from the database dynamically
+let products = [];
+
+// Your shop's WhatsApp number 
 const WHATSAPP_NUMBER = "233538655315"; 
 
 // Grab old cart from user's storage if they refresh, otherwise start empty
@@ -25,14 +26,37 @@ const orderForm = document.getElementById("order-form");
 const modeToggleBtn = document.getElementById("mode-toggle-btn");
 
 const currentMode = localStorage.getItem("theme-mode");
-// 2. Render Products into HTML Catalog
+
+// 2. Fetch Products From Supabase on Page Load
+async function fetchProducts() {
+    try {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*');
+
+        if (error) throw error;
+
+        products = data;
+        displayProducts();
+    } catch (error) {
+        console.error("Error loading products from Supabase:", error.message);
+        productGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: red;">Failed to load catalog. Please try again later.</p>`;
+    }
+}
+
+// Render Products into HTML Catalog
 function displayProducts() {
+    if (products.length === 0) {
+        productGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center;">No items found in stock.</p>`;
+        return;
+    }
+
     productGrid.innerHTML = products.map(product => `
         <div class="product-card">
             <img src="${product.image}" alt="${product.name}" class="product-image">
             <div class="product-info">
                 <div class="product-title">${product.name}</div>
-                <div class="product-price">₵${product.price.toFixed(2)}</div>
+                <div class="product-price">₵${Number(product.price).toFixed(2)}</div>
                 <button class="add-btn" onclick="addToCart(${product.id})">Add to Order</button>
             </div>
         </div>
@@ -80,7 +104,7 @@ function updateCart() {
             <div class="cart-item">
                 <div>
                     <strong>${item.name}</strong> <br>
-                    <small>₵${item.price} x ${item.quantity}</small>
+                    <small>₵${Number(item.price).toFixed(2)} x ${item.quantity}</small>
                 </div>
                 <button class="remove-item-btn" onclick="removeFromCart(${item.id})">Remove</button>
             </div>
@@ -105,7 +129,7 @@ cartToggleBtn.addEventListener("click", openCart);
 closeCartBtn.addEventListener("click", closeCart);
 cartOverlay.addEventListener("click", closeCart);
 
-
+// Dark/Light Mode Switch Logic
 if (currentMode === "dark") {
     document.body.classList.add("dark-mode");
     modeToggleBtn.textContent = "☀️ Light Mode";
@@ -113,12 +137,9 @@ if (currentMode === "dark") {
     modeToggleBtn.textContent = "🌙 Dark Mode";
 }
 
-// 2. Add event listener to handle the click switch
 modeToggleBtn.addEventListener("click", () => {
-    // Toggle the .dark-mode class on the body
     document.body.classList.toggle("dark-mode");
     
-    // Check if dark mode is active after the toggle
     if (document.body.classList.contains("dark-mode")) {
         localStorage.setItem("theme-mode", "dark");
         modeToggleBtn.textContent = "☀️ Light Mode";
@@ -128,8 +149,8 @@ modeToggleBtn.addEventListener("click", () => {
     }
 });
 
-// 4. Form Submission (Formats Cart Data for WhatsApp)
-orderForm.addEventListener("submit", function(e) {
+// 4. Form Submission (Saves to Supabase, then triggers WhatsApp)
+orderForm.addEventListener("submit", async function(e) {
     e.preventDefault();
 
     if (cart.length === 0) {
@@ -141,37 +162,78 @@ orderForm.addEventListener("submit", function(e) {
     const phone = document.getElementById("customer-phone").value;
     const address = document.getElementById("customer-address").value;
 
-    // Build the formatted text receipt string using Markdown for WhatsApp bold highlights
-    let message = `*NEW ORDER REQUEST*\n\n`;
-    message += `*Customer Details:*\n`;
-    message += `• Name: ${name}\n`;
-    message += `• Phone: ${phone}\n`;
-    message += `• Delivery Info: ${address}\n\n`;
-    message += `*Items Requested:*\n`;
-
+    // Calculate grand total and structure database item data
     let grandTotal = 0;
-    cart.forEach(item => {
+    const orderItemsForDb = cart.map(item => {
         const itemTotal = item.price * item.quantity;
         grandTotal += itemTotal;
-        message += `• ${item.name} (x${item.quantity}) - ₵${itemTotal.toFixed(2)}\n`;
+        return {
+            product_id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            total: itemTotal
+        };
     });
 
-    message += `\n*Total Estimated:* ₵${grandTotal.toFixed(2)}`;
+    // Disable button during submission to avoid duplicate database clicks
+    const submitBtn = orderForm.querySelector(".submit-order-btn");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Saving Order...";
 
-    // Convert string to URL-safe formatting
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+    try {
+        // A. Insert Order Data into Supabase (Including the Shop WhatsApp Number)
+        const { data, error } = await supabase
+            .from('orders')
+            .insert([
+                {
+                    customer_name: name,
+                    customer_phone: phone,
+                    delivery_address: address,
+                    items: orderItemsForDb,
+                    total_price: grandTotal,
+                    shop_whatsapp: WHATSAPP_NUMBER // Added field to store shop number
+                }
+            ]);
 
-    // Reset site cart state
-    cart = [];
-    updateCart();
-    closeCart();
-    orderForm.reset();
+        if (error) throw error;
 
-    // Take user to WhatsApp to hit send
-    window.open(whatsappUrl, '_blank');
+        // B. Formulate WhatsApp Message String 
+        let message = `*NEW ORDER REQUEST*\n\n`;
+        message += `*Customer Details:*\n`;
+        message += `• Name: ${name}\n`;
+        message += `• Phone: ${phone}\n`;
+        message += `• Delivery Info: ${address}\n\n`;
+        message += `*Items Requested:*\n`;
+
+        cart.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            message += `• ${item.name} (x${item.quantity}) - ₵${itemTotal.toFixed(2)}\n`;
+        });
+
+        message += `\n*Total Estimated:* ₵${grandTotal.toFixed(2)}`;
+
+        // Convert string to URL-safe formatting
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+
+        // C. Clear State and Open WhatsApp Window
+        cart = [];
+        updateCart();
+        closeCart();
+        orderForm.reset();
+
+        window.open(whatsappUrl, '_blank');
+
+    } catch (error) {
+        console.error("Order insertion failed:", error.message);
+        alert("Something went wrong saving your order. Please try again.");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Order via WhatsApp";
+    }
 });
 
-// Run automatically when page starts up
-displayProducts();
+// Run everything on startup
+fetchProducts();
 updateCart();
