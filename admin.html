@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Big Dream - Owner Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Admin-specific structural utilities layout */
+        .admin-container { padding: 40px 5%; max-width: 1200px; margin: 0 auto; }
+        .admin-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 40px; margin-top: 20px; }
+        @media (max-width: 768px) { .admin-grid { grid-template-columns: 1fr; } }
+        
+        .admin-card { background: var(--card-bg); padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .admin-card h2 { margin-bottom: 20px; font-size: 1.4rem; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: inherit; color: inherit; }
+        
+        .primary-btn { width: 100%; background: var(--accent); color: var(--card-bg); border: none; padding: 12px; font-weight: 700; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .primary-btn:hover { background: var(--accent-hover); }
+        
+        .order-tile { border: 1px solid #eee; padding: 15px; border-radius: 6px; margin-bottom: 15px; background: var(--bg-color); }
+        body.dark-mode .order-tile { border: 1px solid #333; }
+        .order-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; color: var(--accent); }
+        
+        .admin-product-list { display: flex; flex-direction: column; gap: 10px; }
+        .admin-product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-color); border-radius: 4px; }
+        .danger-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .danger-btn:hover { background: #e04343; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">BIG DREAM (ADMIN)</div>
+        <div>
+            <button id="mode-toggle-btn" class="mode-btn">☀</button>
+            <a href="index.html" style="color: var(--text-main); font-weight: 600; text-decoration: none; margin-left: 10px;">View Shop</a>
+        </div>
+    </header>
+
+    <div class="admin-container">
+        <h1>Management Dashboard</h1>
+        <p>Manage store inventory catalog items and track incoming WhatsApp customer orders.</p>
+        
+        <div class="admin-grid">
+            <div class="left-column">
+                <div class="admin-card">
+                    <h2>Add New Product</h2>
+                    <form id="add-product-form">
+                        <div class="form-group">
+                            <label for="prod-name">Product Title</label>
+                            <input type="text" id="prod-name" required placeholder="e.g., Luxury Vintage Jacket">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-price">Price (₵)</label>
+                            <input type="number" id="prod-price" step="0.01" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-image">Image URL</label>
+                            <input type="url" id="prod-image" required placeholder="https://images.unsplash.com/...">
+                        </div>
+                        <button type="submit" class="primary-btn">Upload to Shop</button>
+                    </form>
+                </div>
+
+                <div class="admin-card">
+                    <h2>Current Catalog Stock</h2>
+                    <div class="admin-product-list" id="admin-product-list">
+                        <p>Loading items...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-column">
+                <div class="admin-card">
+                    <h2>Recent Customer Orders</h2>
+                    <div id="orders-container">
+                        <p>Loading received logs...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>    
+    <script src="admin.js"></script>
+</body>
+</html>
